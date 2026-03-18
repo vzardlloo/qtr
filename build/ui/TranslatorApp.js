@@ -1,53 +1,48 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
-import { loadConfig, saveConfig } from '../config/config.js';
 import { createEngine, listEngines } from '../engines/index.js';
-import { isEngineName } from '../engines/types.js';
-import { TextInput } from './TextInput.js';
-import { StatusBadge } from './StatusBadge.js';
-import { ResultBox } from './ResultBox.js';
 import { EngineSelectPanel } from './EngineSelectPanel.js';
-/**
- * Ink UI entry.
- *
- * Keybindings:
- * - Ctrl+C: exit
- * - Esc: exit (when panel closed)
- * - Tab: open/close engine panel
- * - ↑/↓ + Enter: choose engine (panel opened)
- * - Ctrl+S: persist current engine to config
- */
-export function TranslatorApp({ initialEngine, defaultFrom, defaultTo, }) {
+import { LanguageSelectPanel } from './LanguageSelectPanel.js';
+import { ResultBox } from './ResultBox.js';
+import { StatusBadge } from './StatusBadge.js';
+import { TextInput } from './TextInput.js';
+const LANGUAGES = [
+    { code: 'auto', label: '自动' },
+    { code: 'zh', label: '中文' },
+    { code: 'en', label: 'English' },
+    { code: 'ja', label: '日本語' },
+    { code: 'ko', label: '한국어' },
+    { code: 'fr', label: 'Français' },
+    { code: 'de', label: 'Deutsch' },
+    { code: 'es', label: 'Español' },
+    { code: 'ru', label: 'Русский' },
+];
+export function TranslatorApp({ engineName, defaultFrom, defaultTo, isEngineConfigured, onEngineChange, onPersistEngine, onRequestSetup, }) {
     const { exit } = useApp();
     const engines = useMemo(() => listEngines(), []);
     const [input, setInput] = useState('');
     const [from, setFrom] = useState(defaultFrom);
     const [to, setTo] = useState(defaultTo);
-    const [engineName, setEngineName] = useState('baidu');
     const [status, setStatus] = useState('idle');
     const [errorMessage, setErrorMessage] = useState();
     const [result, setResult] = useState();
     const [isEnginePanelOpen, setIsEnginePanelOpen] = useState(false);
     const [engineHighlightedIndex, setEngineHighlightedIndex] = useState(0);
+    const [languagePanel, setLanguagePanel] = useState(null);
+    const [languageHighlightedIndex, setLanguageHighlightedIndex] = useState(0);
     const abortRef = useRef(undefined);
-    useEffect(() => {
-        (async () => {
-            const config = await loadConfig();
-            const fromConfig = config.currentEngine;
-            if (initialEngine && isEngineName(initialEngine)) {
-                setEngineName(initialEngine);
-                return;
-            }
-            if (isEngineName(fromConfig)) {
-                setEngineName(fromConfig);
-            }
-        })();
-    }, [initialEngine]);
+    const isInputDisabled = isEnginePanelOpen || Boolean(languagePanel);
     const openEnginePanel = () => {
         const idx = engines.findIndex((e) => e.name === engineName);
         setEngineHighlightedIndex(idx >= 0 ? idx : 0);
         setIsEnginePanelOpen(true);
+    };
+    const openLanguagePanel = (which) => {
+        const current = which === 'from' ? from : to;
+        const idx = LANGUAGES.findIndex((l) => l.code === current);
+        setLanguageHighlightedIndex(idx >= 0 ? idx : 0);
+        setLanguagePanel(which);
     };
     useInput(async (character, key) => {
         if (key.ctrl && character === 'c') {
@@ -67,9 +62,15 @@ export function TranslatorApp({ initialEngine, defaultFrom, defaultTo, }) {
             }
             if (key.return) {
                 const chosen = engines[engineHighlightedIndex];
-                if (chosen)
-                    setEngineName(chosen.name);
+                if (chosen) {
+                    if (!isEngineConfigured(chosen.name)) {
+                        onRequestSetup(chosen.name);
+                        return;
+                    }
+                    onEngineChange(chosen.name);
+                }
                 setIsEnginePanelOpen(false);
+                return;
             }
             if (character && !key.ctrl && !key.meta) {
                 const letter = character.trim().slice(0, 1).toLowerCase();
@@ -90,6 +91,29 @@ export function TranslatorApp({ initialEngine, defaultFrom, defaultTo, }) {
             }
             return;
         }
+        if (languagePanel) {
+            if (key.escape || key.tab) {
+                setLanguagePanel(null);
+                return;
+            }
+            if (key.upArrow) {
+                setLanguageHighlightedIndex((previousIndex) => previousIndex === 0 ? LANGUAGES.length - 1 : previousIndex - 1);
+            }
+            if (key.downArrow) {
+                setLanguageHighlightedIndex((previousIndex) => previousIndex === LANGUAGES.length - 1 ? 0 : previousIndex + 1);
+            }
+            if (key.return) {
+                const selected = LANGUAGES[languageHighlightedIndex];
+                if (selected) {
+                    if (languagePanel === 'from')
+                        setFrom(selected.code);
+                    if (languagePanel === 'to')
+                        setTo(selected.code);
+                }
+                setLanguagePanel(null);
+            }
+            return;
+        }
         if (key.escape) {
             exit();
             return;
@@ -99,23 +123,28 @@ export function TranslatorApp({ initialEngine, defaultFrom, defaultTo, }) {
             return;
         }
         if (key.ctrl && character === 's') {
-            const config = await loadConfig();
-            await saveConfig({ ...config, currentEngine: engineName });
+            await onPersistEngine(engineName);
+            return;
         }
         if (key.ctrl && character === 'l') {
             setInput('');
             setResult(undefined);
             setStatus('idle');
             setErrorMessage(undefined);
+            return;
         }
         if (key.ctrl && character === 'f') {
-            setFrom((v) => (v === 'auto' ? 'en' : 'auto'));
+            openLanguagePanel('from');
+            return;
         }
         if (key.ctrl && character === 't') {
-            setTo((v) => (v === 'zh' ? 'en' : 'zh'));
+            openLanguagePanel('to');
+            return;
         }
     });
-    useEffect(() => {
+    React.useEffect(() => {
+        if (isInputDisabled)
+            return;
         if (!input.trim()) {
             setStatus('idle');
             setResult(undefined);
@@ -152,6 +181,6 @@ export function TranslatorApp({ initialEngine, defaultFrom, defaultTo, }) {
         return () => {
             clearTimeout(timeout);
         };
-    }, [engineName, from, input, to]);
-    return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), ' ', _jsx(Text, { dimColor: true, children: "Ink \u00B7 React \u00B7 Node" })] }), _jsx(StatusBadge, { status: status })] }), _jsx(Box, { borderStyle: "round", borderColor: "cyan", paddingX: 1, paddingY: 0, children: _jsxs(Box, { flexDirection: "column", width: "100%", children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: ["Engine: ", _jsx(Text, { color: "yellow", children: engineName }), ' ', _jsx(Text, { dimColor: true, children: "(Tab to choose)" })] }), _jsxs(Text, { children: ["from ", _jsx(Text, { color: "green", children: from }), " \u00B7 to", ' ', _jsx(Text, { color: "green", children: to })] })] }), isEnginePanelOpen && (_jsx(Box, { marginTop: 1, children: _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: engineName }) })), _jsx(Box, { marginTop: 1, children: _jsx(TextInput, { value: input, onChange: setInput, placeholder: "Type to translate\u2026", isDisabled: isEnginePanelOpen }) })] }) }), _jsx(ResultBox, { engineName: engineName, status: status, result: result, errorMessage: errorMessage }), _jsx(Text, { dimColor: true, children: "Keys: Tab engine panel \u00B7 \u2191/\u2193/Enter choose \u00B7 Ctrl+S save engine \u00B7 Ctrl+L clear \u00B7 Ctrl+F toggle from \u00B7 Ctrl+T toggle to \u00B7 Esc/Ctrl+C exit" })] }));
+    }, [engineName, from, input, isInputDisabled, to]);
+    return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), ' ', _jsx(Text, { dimColor: true, children: "Ink \u00B7 React \u00B7 Node" })] }), _jsx(StatusBadge, { status: status })] }), _jsx(Box, { borderStyle: "round", borderColor: "cyan", paddingX: 1, paddingY: 0, children: _jsxs(Box, { flexDirection: "column", width: "100%", children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: ["Engine: ", _jsx(Text, { color: "yellow", children: engineName }), ' ', _jsx(Text, { dimColor: true, children: "(Tab to choose)" })] }), _jsxs(Text, { children: ["from ", _jsx(Text, { color: "green", children: from }), " \u00B7 to", ' ', _jsx(Text, { color: "green", children: to })] })] }), isEnginePanelOpen && (_jsx(Box, { marginTop: 1, children: _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: engineName }) })), languagePanel && (_jsx(Box, { marginTop: 1, children: _jsx(LanguageSelectPanel, { title: languagePanel === 'from' ? 'Choose source language' : 'Choose target language', items: LANGUAGES, highlightedIndex: languageHighlightedIndex, selectedCode: languagePanel === 'from' ? from : to }) })), _jsx(Box, { marginTop: 1, children: _jsx(TextInput, { value: input, onChange: setInput, placeholder: "Type to translate\u2026", isDisabled: isInputDisabled }) })] }) }), _jsx(ResultBox, { engineName: engineName, status: status, result: result, errorMessage: errorMessage }), _jsx(Text, { dimColor: true, children: "Keys: Tab engine \u00B7 Ctrl+F choose from \u00B7 Ctrl+T choose to \u00B7 Ctrl+S save engine \u00B7 Ctrl+L clear \u00B7 Esc/Ctrl+C exit" })] }));
 }

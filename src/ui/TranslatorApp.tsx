@@ -1,34 +1,44 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {Box, Text, useApp, useInput} from 'ink';
-import {loadConfig, saveConfig} from '../config/config.js';
+
 import {createEngine, listEngines} from '../engines/index.js';
 import type {EngineName, TranslateRequest, TranslateResult} from '../engines/types.js';
-import {isEngineName} from '../engines/types.js';
-import {TextInput} from './TextInput.js';
-import {StatusBadge} from './StatusBadge.js';
-import {ResultBox} from './ResultBox.js';
 import {EngineSelectPanel} from './EngineSelectPanel.js';
+import {LanguageSelectPanel, type LanguageItem} from './LanguageSelectPanel.js';
+import {ResultBox} from './ResultBox.js';
+import {StatusBadge} from './StatusBadge.js';
+import {TextInput} from './TextInput.js';
 
 export type TranslatorAppProps = {
-	initialEngine?: string;
+	engineName: EngineName;
 	defaultFrom: string;
 	defaultTo: string;
+	isEngineConfigured: (engineName: EngineName) => boolean;
+	onEngineChange: (engineName: EngineName) => void;
+	onPersistEngine: (engineName: EngineName) => Promise<void>;
+	onRequestSetup: (engineName: EngineName) => void;
 };
 
-/**
- * Ink UI entry.
- *
- * Keybindings:
- * - Ctrl+C: exit
- * - Esc: exit (when panel closed)
- * - Tab: open/close engine panel
- * - ↑/↓ + Enter: choose engine (panel opened)
- * - Ctrl+S: persist current engine to config
- */
+const LANGUAGES: LanguageItem[] = [
+	{code: 'auto', label: '自动'},
+	{code: 'zh', label: '中文'},
+	{code: 'en', label: 'English'},
+	{code: 'ja', label: '日本語'},
+	{code: 'ko', label: '한국어'},
+	{code: 'fr', label: 'Français'},
+	{code: 'de', label: 'Deutsch'},
+	{code: 'es', label: 'Español'},
+	{code: 'ru', label: 'Русский'},
+];
+
 export function TranslatorApp({
-	initialEngine,
+	engineName,
 	defaultFrom,
 	defaultTo,
+	isEngineConfigured,
+	onEngineChange,
+	onPersistEngine,
+	onRequestSetup,
 }: TranslatorAppProps) {
 	const {exit} = useApp();
 	const engines = useMemo(() => listEngines(), []);
@@ -36,7 +46,6 @@ export function TranslatorApp({
 	const [input, setInput] = useState('');
 	const [from, setFrom] = useState(defaultFrom);
 	const [to, setTo] = useState(defaultTo);
-	const [engineName, setEngineName] = useState<EngineName>('baidu');
 	const [status, setStatus] = useState<
 		'idle' | 'loading' | 'ok' | 'error'
 	>('idle');
@@ -47,28 +56,25 @@ export function TranslatorApp({
 	const [engineHighlightedIndex, setEngineHighlightedIndex] =
 		useState<number>(0);
 
+	const [languagePanel, setLanguagePanel] = useState<null | 'from' | 'to'>(null);
+	const [languageHighlightedIndex, setLanguageHighlightedIndex] =
+		useState<number>(0);
+
 	const abortRef = useRef<AbortController | undefined>(undefined);
 
-	useEffect(() => {
-		(async () => {
-			const config = await loadConfig();
-			const fromConfig = config.currentEngine;
-
-			if (initialEngine && isEngineName(initialEngine)) {
-				setEngineName(initialEngine);
-				return;
-			}
-
-			if (isEngineName(fromConfig)) {
-				setEngineName(fromConfig);
-			}
-		})();
-	}, [initialEngine]);
+	const isInputDisabled = isEnginePanelOpen || Boolean(languagePanel);
 
 	const openEnginePanel = () => {
 		const idx = engines.findIndex((e) => e.name === engineName);
 		setEngineHighlightedIndex(idx >= 0 ? idx : 0);
 		setIsEnginePanelOpen(true);
+	};
+
+	const openLanguagePanel = (which: 'from' | 'to') => {
+		const current = which === 'from' ? from : to;
+		const idx = LANGUAGES.findIndex((l) => l.code === current);
+		setLanguageHighlightedIndex(idx >= 0 ? idx : 0);
+		setLanguagePanel(which);
 	};
 
 	useInput(async (character, key) => {
@@ -97,8 +103,17 @@ export function TranslatorApp({
 
 			if (key.return) {
 				const chosen = engines[engineHighlightedIndex];
-				if (chosen) setEngineName(chosen.name);
+				if (chosen) {
+					if (!isEngineConfigured(chosen.name)) {
+						onRequestSetup(chosen.name);
+						return;
+					}
+
+					onEngineChange(chosen.name);
+				}
+
 				setIsEnginePanelOpen(false);
+				return;
 			}
 
 			if (character && !key.ctrl && !key.meta) {
@@ -124,6 +139,37 @@ export function TranslatorApp({
 			return;
 		}
 
+		if (languagePanel) {
+			if (key.escape || key.tab) {
+				setLanguagePanel(null);
+				return;
+			}
+
+			if (key.upArrow) {
+				setLanguageHighlightedIndex((previousIndex) =>
+					previousIndex === 0 ? LANGUAGES.length - 1 : previousIndex - 1,
+				);
+			}
+
+			if (key.downArrow) {
+				setLanguageHighlightedIndex((previousIndex) =>
+					previousIndex === LANGUAGES.length - 1 ? 0 : previousIndex + 1,
+				);
+			}
+
+			if (key.return) {
+				const selected = LANGUAGES[languageHighlightedIndex];
+				if (selected) {
+					if (languagePanel === 'from') setFrom(selected.code);
+					if (languagePanel === 'to') setTo(selected.code);
+				}
+
+				setLanguagePanel(null);
+			}
+
+			return;
+		}
+
 		if (key.escape) {
 			exit();
 			return;
@@ -135,8 +181,8 @@ export function TranslatorApp({
 		}
 
 		if (key.ctrl && character === 's') {
-			const config = await loadConfig();
-			await saveConfig({...config, currentEngine: engineName});
+			await onPersistEngine(engineName);
+			return;
 		}
 
 		if (key.ctrl && character === 'l') {
@@ -144,18 +190,23 @@ export function TranslatorApp({
 			setResult(undefined);
 			setStatus('idle');
 			setErrorMessage(undefined);
+			return;
 		}
 
 		if (key.ctrl && character === 'f') {
-			setFrom((v) => (v === 'auto' ? 'en' : 'auto'));
+			openLanguagePanel('from');
+			return;
 		}
 
 		if (key.ctrl && character === 't') {
-			setTo((v) => (v === 'zh' ? 'en' : 'zh'));
+			openLanguagePanel('to');
+			return;
 		}
 	});
 
-	useEffect(() => {
+	React.useEffect(() => {
+		if (isInputDisabled) return;
+
 		if (!input.trim()) {
 			setStatus('idle');
 			setResult(undefined);
@@ -196,7 +247,7 @@ export function TranslatorApp({
 		return () => {
 			clearTimeout(timeout);
 		};
-	}, [engineName, from, input, to]);
+	}, [engineName, from, input, isInputDisabled, to]);
 
 	return (
 		<Box flexDirection="column" padding={1} gap={1}>
@@ -221,7 +272,7 @@ export function TranslatorApp({
 						</Text>
 					</Box>
 
-					{isEnginePanelOpen && (
+					{isEnginePanelOpen ? (
 						<Box marginTop={1}>
 							<EngineSelectPanel
 								engines={engines}
@@ -229,14 +280,29 @@ export function TranslatorApp({
 								selectedEngine={engineName}
 							/>
 						</Box>
-					)}
+					) : null}
+
+					{languagePanel ? (
+						<Box marginTop={1}>
+							<LanguageSelectPanel
+								title={
+									languagePanel === 'from'
+										? 'Choose source language'
+										: 'Choose target language'
+								}
+								items={LANGUAGES}
+								highlightedIndex={languageHighlightedIndex}
+								selectedCode={languagePanel === 'from' ? from : to}
+							/>
+						</Box>
+					) : null}
 
 					<Box marginTop={1}>
 						<TextInput
 							value={input}
 							onChange={setInput}
 							placeholder="Type to translate…"
-							isDisabled={isEnginePanelOpen}
+							isDisabled={isInputDisabled}
 						/>
 					</Box>
 				</Box>
@@ -250,8 +316,8 @@ export function TranslatorApp({
 			/>
 
 			<Text dimColor>
-				Keys: Tab engine panel · ↑/↓/Enter choose · Ctrl+S save engine · Ctrl+L clear ·
-				 Ctrl+F toggle from · Ctrl+T toggle to · Esc/Ctrl+C exit
+				Keys: Tab engine · Ctrl+F choose from · Ctrl+T choose to · Ctrl+S save engine ·
+				 Ctrl+L clear · Esc/Ctrl+C exit
 			</Text>
 		</Box>
 	);

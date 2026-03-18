@@ -21,10 +21,12 @@ export class YoudaoEngine {
             curtime +
             this.creds.appSecret)
             .digest('hex');
+        const from = normalizeYoudaoLang(request.from);
+        const to = normalizeYoudaoLang(request.to);
         const body = new URLSearchParams({
             q: request.text,
-            from: request.from,
-            to: request.to,
+            from,
+            to,
             appKey: this.creds.appKey,
             salt,
             sign,
@@ -51,4 +53,14 @@ function truncate(q) {
     if (size <= 20)
         return q;
     return q.slice(0, 10) + size + q.slice(size - 10);
+}
+function normalizeYoudaoLang(lang) {
+    switch (lang) {
+        case 'auto':
+            return 'auto';
+        case 'zh':
+            return 'zh-CHS';
+        default:
+            return lang;
+    }
 }

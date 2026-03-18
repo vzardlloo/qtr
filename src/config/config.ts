@@ -115,6 +115,23 @@ export function hasAnyEngineConfigured(config: TranslatorConfig) {
 	);
 }
 
+export function isEngineConfigured(config: TranslatorConfig, engineName: EngineName) {
+	switch (engineName) {
+		case 'baidu': {
+			const creds = config.engines.baidu;
+			return Boolean(creds?.appId && creds.appSecret);
+		}
+		case 'youdao': {
+			const creds = config.engines.youdao;
+			return Boolean(creds?.appKey && creds.appSecret);
+		}
+		case 'tencent': {
+			const creds = config.engines.tencent;
+			return Boolean(creds?.secretId && creds.secretKey);
+		}
+	}
+}
+
 async function readConfigFile(configPath: string): Promise<TranslatorConfig | undefined> {
 	try {
 		const raw = await fs.readFile(configPath, 'utf8');

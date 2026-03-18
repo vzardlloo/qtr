@@ -11,6 +11,12 @@ import {TextInput} from './TextInput.js';
 
 export type ConfigSetupAppProps = {
 	initialEngine?: string;
+	/** When true, exits the process after finishing/canceling. */
+	exitOnDone?: boolean;
+	/** Called when setup completed (embedded mode). */
+	onDone?: (engineName: EngineName) => void;
+	/** Called when user exits setup (embedded mode). */
+	onCancel?: () => void;
 };
 
 type Field = {
@@ -96,7 +102,12 @@ const ENGINE_APPLY_GUIDE: Record<
 	},
 };
 
-export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
+export function ConfigSetupApp({
+	initialEngine,
+	exitOnDone = true,
+	onDone,
+	onCancel,
+}: ConfigSetupAppProps) {
 	const {exit} = useApp();
 	const engines = useMemo(() => listEngines(), []);
 
@@ -138,6 +149,15 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 	const highlightedEngineName: EngineName =
 		engines[engineHighlightedIndex]?.name ?? 'baidu';
 
+	const exitOrCancel = () => {
+		if (!exitOnDone) {
+			onCancel?.();
+			return;
+		}
+
+		exit();
+	};
+
 	useInput(async (character, key) => {
 		if (key.ctrl && character === 'c') {
 			exit();
@@ -145,13 +165,23 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 		}
 
 		if (step === 'done') {
-			exit();
+			if (exitOnDone) {
+				exit();
+				return;
+			}
+
+			if (engineName) {
+				onDone?.(engineName);
+			} else {
+				onCancel?.();
+			}
+
 			return;
 		}
 
 		if (step === 'select-engine') {
 			if (key.escape) {
-				exit();
+				exitOrCancel();
 				return;
 			}
 
@@ -291,8 +321,10 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 					<Text color="cyan">{ENGINE_APPLY_GUIDE[highlightedEngineName].url}</Text>
 				</Text>
 				<Text dimColor>{ENGINE_APPLY_GUIDE[highlightedEngineName].hint}</Text>
-				<Text dimColor>快捷键：o 打开链接 · Esc 退出</Text>
-				{notice && <Text dimColor>{notice}</Text>}
+				<Text dimColor>
+					快捷键：o 打开链接 · Esc {exitOnDone ? '退出' : '返回'}
+				</Text>
+				{notice ? <Text dimColor>{notice}</Text> : null}
 			</Box>
 		);
 	}
@@ -308,7 +340,9 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 						Saved to <Text color="green">{savedPath}</Text>
 					</Text>
 				</Box>
-				<Text dimColor>Press any key to exit, then run `qtr`.</Text>
+				<Text dimColor>
+					{exitOnDone ? 'Press any key to exit, then run `qtr`.' : 'Press any key to go back.'}
+				</Text>
 			</Box>
 		);
 	}
@@ -350,7 +384,7 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 					</Text>
 					<Text dimColor>{ENGINE_APPLY_GUIDE[engineName].hint}</Text>
 					<Text dimColor>快捷键：o 打开链接</Text>
-					{notice && <Text dimColor>{notice}</Text>}
+					{notice ? <Text dimColor>{notice}</Text> : null}
 
 					<Box flexDirection="column">
 						<Text>
@@ -370,12 +404,12 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 							placeholder={current.placeholder}
 						/>
 						<Text dimColor>Enter: next / save</Text>
-						{validationError && <Text color="red">{validationError}</Text>}
+						{validationError ? <Text color="red">{validationError}</Text> : null}
 					</Box>
 				</Box>
 			</Box>
 
-			{isSaving && <Text color="yellow">Saving…</Text>}
+			{isSaving ? <Text color="yellow">Saving…</Text> : null}
 		</Box>
 	);
 }
