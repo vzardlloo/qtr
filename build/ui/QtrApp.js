@@ -1,5 +1,5 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, useApp } from 'ink';
 import { hasAnyEngineConfigured, isEngineConfigured, loadConfig, saveConfig, } from '../config/config.js';
 import { isEngineName } from '../engines/types.js';
@@ -11,7 +11,6 @@ export function QtrApp({ initialEngine, defaultFrom, defaultTo }) {
     const [mode, setMode] = useState('translator');
     const [engineName, setEngineName] = useState('baidu');
     const [setupEngine, setSetupEngine] = useState();
-    const isReady = useMemo(() => Boolean(config), [config]);
     useEffect(() => {
         (async () => {
             const cfg = await loadConfig();
@@ -38,7 +37,7 @@ export function QtrApp({ initialEngine, defaultFrom, defaultTo }) {
             }
         })();
     }, [initialEngine]);
-    if (!isReady) {
+    if (!config) {
         return _jsx(Text, { dimColor: true, children: "Loading\u2026" });
     }
     const configured = config;

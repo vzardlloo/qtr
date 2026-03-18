@@ -7,6 +7,7 @@ import {listEngines} from '../engines/index.js';
 import type {EngineName} from '../engines/types.js';
 import {isEngineName} from '../engines/types.js';
 import {EngineSelectPanel} from './EngineSelectPanel.js';
+import {QtrBanner} from './QtrBanner.js';
 import {TextInput} from './TextInput.js';
 
 export type ConfigSetupAppProps = {
@@ -306,6 +307,7 @@ export function ConfigSetupApp({
 	if (step === 'select-engine') {
 		return (
 			<Box flexDirection="column" padding={1} gap={1}>
+				<QtrBanner />
 				<Text>
 					<Text color="cyanBright">qtr</Text> <Text dimColor>config setup</Text>
 				</Text>
@@ -332,6 +334,7 @@ export function ConfigSetupApp({
 	if (step === 'done') {
 		return (
 			<Box flexDirection="column" padding={1} gap={1}>
+				<QtrBanner />
 				<Text>
 					<Text color="cyanBright">qtr</Text> <Text dimColor>config setup</Text>
 				</Text>
@@ -362,6 +365,7 @@ export function ConfigSetupApp({
 
 	return (
 		<Box flexDirection="column" padding={1} gap={1}>
+			<QtrBanner />
 			<Text>
 				<Text color="cyanBright">qtr</Text> <Text dimColor>config setup</Text>
 			</Text>
