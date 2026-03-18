@@ -6,7 +6,7 @@ import { TranslatorApp } from './ui/TranslatorApp.js';
 import { ConfigSetupApp } from './ui/ConfigSetupApp.js';
 import { createEngine, listEngines } from './engines/index.js';
 import { isEngineName } from './engines/types.js';
-import { getPreferredConfigPath, initConfigIfMissing, loadConfig, setCurrentEngine, } from './config/config.js';
+import { getPreferredConfigPath, hasAnyEngineConfigured, initConfigIfMissing, loadConfig, setCurrentEngine, } from './config/config.js';
 const cli = cac('qtr');
 cli
     .command('', 'Start interactive qtr')
@@ -15,6 +15,12 @@ cli
     .option('--to <lang>', 'Target language, e.g. zh/en', { default: 'zh' })
     .action(async (options) => {
     await initConfigIfMissing();
+    const config = await loadConfig();
+    // No engine configured at all -> guide users into setup.
+    if (!hasAnyEngineConfigured(config)) {
+        render(_jsx(ConfigSetupApp, { initialEngine: options.engine }));
+        return;
+    }
     render(_jsx(TranslatorApp, { initialEngine: options.engine, defaultFrom: options.from, defaultTo: options.to }));
 });
 cli
@@ -25,6 +31,9 @@ cli
     .action(async (text, options) => {
     await initConfigIfMissing();
     const config = await loadConfig();
+    if (!hasAnyEngineConfigured(config)) {
+        throw new Error('未检测到任何可用翻译引擎配置，请先运行 `qtr config:setup` 设置一个引擎。');
+    }
     const engineName = options.engine ?? config.currentEngine;
     if (!isEngineName(engineName)) {
         throw new Error(`Unknown engine: ${engineName}`);

@@ -79,6 +79,8 @@ qtr --engine baidu --from auto --to zh
 
 交互快捷键：
 
+> 如果检测到你尚未配置任何引擎，直接运行 `qtr` 会自动进入 `config:setup` 向导。
+
 - `Tab`：打开/关闭引擎选择面板（↑/↓ 选择，Enter 确认；也可直接输入首字母快速定位）
 - `Ctrl+S`：将当前引擎写入配置文件（下次默认使用）
 - `Ctrl+L`：清空输入

@@ -66,6 +66,14 @@ export async function setCurrentEngine(engine) {
     const config = await loadConfig();
     await saveConfig({ ...config, currentEngine: engine });
 }
+export function hasAnyEngineConfigured(config) {
+    const baidu = config.engines.baidu;
+    const youdao = config.engines.youdao;
+    const tencent = config.engines.tencent;
+    return Boolean((baidu?.appId && baidu.appSecret) ||
+        (youdao?.appKey && youdao.appSecret) ||
+        (tencent?.secretId && tencent.secretKey));
+}
 async function readConfigFile(configPath) {
     try {
         const raw = await fs.readFile(configPath, 'utf8');
