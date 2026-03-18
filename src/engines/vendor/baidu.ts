@@ -31,10 +31,13 @@ export class BaiduEngine implements TranslatorEngine {
 			.update(this.creds.appId + request.text + salt + this.creds.appSecret)
 			.digest('hex');
 
+		const from = normalizeBaiduLang(request.from);
+		const to = normalizeBaiduLang(request.to);
+
 		const params = new URLSearchParams({
 			q: request.text,
-			from: request.from,
-			to: request.to,
+			from,
+			to,
 			appid: this.creds.appId,
 			salt,
 			sign,
@@ -52,5 +55,30 @@ export class BaiduEngine implements TranslatorEngine {
 
 		const text = (body.trans_result ?? []).map((t) => t.dst).join('\n');
 		return {text, raw: body};
+	}
+}
+
+function normalizeBaiduLang(lang: string) {
+	switch (lang) {
+		case 'auto':
+			return 'auto';
+		case 'zh':
+			return 'zh';
+		case 'en':
+			return 'en';
+		case 'ja':
+			return 'jp';
+		case 'ko':
+			return 'kor';
+		case 'fr':
+			return 'fra';
+		case 'de':
+			return 'de';
+		case 'es':
+			return 'spa';
+		case 'ru':
+			return 'ru';
+		default:
+			return lang;
 	}
 }

@@ -16,10 +16,12 @@ export class BaiduEngine {
             .createHash('md5')
             .update(this.creds.appId + request.text + salt + this.creds.appSecret)
             .digest('hex');
+        const from = normalizeBaiduLang(request.from);
+        const to = normalizeBaiduLang(request.to);
         const params = new URLSearchParams({
             q: request.text,
-            from: request.from,
-            to: request.to,
+            from,
+            to,
             appid: this.creds.appId,
             salt,
             sign,
@@ -31,5 +33,29 @@ export class BaiduEngine {
         }
         const text = (body.trans_result ?? []).map((t) => t.dst).join('\n');
         return { text, raw: body };
+    }
+}
+function normalizeBaiduLang(lang) {
+    switch (lang) {
+        case 'auto':
+            return 'auto';
+        case 'zh':
+            return 'zh';
+        case 'en':
+            return 'en';
+        case 'ja':
+            return 'jp';
+        case 'ko':
+            return 'kor';
+        case 'fr':
+            return 'fra';
+        case 'de':
+            return 'de';
+        case 'es':
+            return 'spa';
+        case 'ru':
+            return 'ru';
+        default:
+            return lang;
     }
 }

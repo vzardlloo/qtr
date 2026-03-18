@@ -2,7 +2,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { render } from 'ink';
 import { cac } from 'cac';
-import { TranslatorApp } from './ui/TranslatorApp.js';
+import { QtrApp } from './ui/QtrApp.js';
 import { ConfigSetupApp } from './ui/ConfigSetupApp.js';
 import { createEngine, listEngines } from './engines/index.js';
 import { isEngineName } from './engines/types.js';
@@ -11,23 +11,17 @@ const cli = cac('qtr');
 cli
     .command('', 'Start interactive qtr')
     .option('--engine <name>', 'Use a specific engine for this session')
-    .option('--from <lang>', 'Source language, e.g. en/zh/auto', { default: 'auto' })
-    .option('--to <lang>', 'Target language, e.g. zh/en', { default: 'zh' })
+    .option('--from <lang>', 'Source language, e.g. en/zh/auto', { default: 'zh' })
+    .option('--to <lang>', 'Target language, e.g. zh/en', { default: 'en' })
     .action(async (options) => {
     await initConfigIfMissing();
-    const config = await loadConfig();
-    // No engine configured at all -> guide users into setup.
-    if (!hasAnyEngineConfigured(config)) {
-        render(_jsx(ConfigSetupApp, { initialEngine: options.engine }));
-        return;
-    }
-    render(_jsx(TranslatorApp, { initialEngine: options.engine, defaultFrom: options.from, defaultTo: options.to }));
+    render(_jsx(QtrApp, { initialEngine: options.engine, defaultFrom: options.from, defaultTo: options.to }));
 });
 cli
     .command('translate <text>', 'Translate once and print result')
     .option('--engine <name>', 'Use a specific engine for this command')
-    .option('--from <lang>', 'Source language, e.g. en/zh/auto', { default: 'auto' })
-    .option('--to <lang>', 'Target language, e.g. zh/en', { default: 'zh' })
+    .option('--from <lang>', 'Source language, e.g. en/zh/auto', { default: 'zh' })
+    .option('--to <lang>', 'Target language, e.g. zh/en', { default: 'en' })
     .action(async (text, options) => {
     await initConfigIfMissing();
     const config = await loadConfig();

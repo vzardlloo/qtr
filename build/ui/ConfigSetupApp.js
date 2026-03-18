@@ -74,7 +74,7 @@ const ENGINE_APPLY_GUIDE = {
         hint: '开通机器翻译服务后，在腾讯云控制台获取 SecretId/SecretKey。',
     },
 };
-export function ConfigSetupApp({ initialEngine }) {
+export function ConfigSetupApp({ initialEngine, exitOnDone = true, onDone, onCancel, }) {
     const { exit } = useApp();
     const engines = useMemo(() => listEngines(), []);
     const [step, setStep] = useState(() => initialEngine && isEngineName(initialEngine) ? 'fields' : 'select-engine');
@@ -101,18 +101,34 @@ export function ConfigSetupApp({ initialEngine }) {
         })();
     }, [engineName, engines]);
     const highlightedEngineName = engines[engineHighlightedIndex]?.name ?? 'baidu';
+    const exitOrCancel = () => {
+        if (!exitOnDone) {
+            onCancel?.();
+            return;
+        }
+        exit();
+    };
     useInput(async (character, key) => {
         if (key.ctrl && character === 'c') {
             exit();
             return;
         }
         if (step === 'done') {
-            exit();
+            if (exitOnDone) {
+                exit();
+                return;
+            }
+            if (engineName) {
+                onDone?.(engineName);
+            }
+            else {
+                onCancel?.();
+            }
             return;
         }
         if (step === 'select-engine') {
             if (key.escape) {
-                exit();
+                exitOrCancel();
                 return;
             }
             if (character === 'o' && !key.ctrl && !key.meta) {
@@ -216,10 +232,10 @@ export function ConfigSetupApp({ initialEngine }) {
         }
     });
     if (step === 'select-engine') {
-        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: (isEngineName(initialEngine) && initialEngine) || 'baidu' }), _jsxs(Text, { dimColor: true, children: ["\u7533\u8BF7\u5730\u5740:", ' ', _jsx(Text, { color: "cyan", children: ENGINE_APPLY_GUIDE[highlightedEngineName].url })] }), _jsx(Text, { dimColor: true, children: ENGINE_APPLY_GUIDE[highlightedEngineName].hint }), _jsx(Text, { dimColor: true, children: "\u5FEB\u6377\u952E\uFF1Ao \u6253\u5F00\u94FE\u63A5 \u00B7 Esc \u9000\u51FA" }), notice && _jsx(Text, { dimColor: true, children: notice })] }));
+        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: (isEngineName(initialEngine) && initialEngine) || 'baidu' }), _jsxs(Text, { dimColor: true, children: ["\u7533\u8BF7\u5730\u5740:", ' ', _jsx(Text, { color: "cyan", children: ENGINE_APPLY_GUIDE[highlightedEngineName].url })] }), _jsx(Text, { dimColor: true, children: ENGINE_APPLY_GUIDE[highlightedEngineName].hint }), _jsxs(Text, { dimColor: true, children: ["\u5FEB\u6377\u952E\uFF1Ao \u6253\u5F00\u94FE\u63A5 \u00B7 Esc ", exitOnDone ? '退出' : '返回'] }), notice && _jsx(Text, { dimColor: true, children: notice })] }));
     }
     if (step === 'done') {
-        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "green", paddingX: 1, children: _jsxs(Text, { children: ["Saved to ", _jsx(Text, { color: "green", children: savedPath })] }) }), _jsx(Text, { dimColor: true, children: "Press any key to exit, then run `qtr`." })] }));
+        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "green", paddingX: 1, children: _jsxs(Text, { children: ["Saved to ", _jsx(Text, { color: "green", children: savedPath })] }) }), _jsx(Text, { dimColor: true, children: exitOnDone ? 'Press any key to exit, then run `qtr`.' : 'Press any key to go back.' })] }));
     }
     // step === 'fields'
     if (!engineName) {

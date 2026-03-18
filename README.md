@@ -73,21 +73,23 @@ qtr config:setup
 qtr
 ```
 
+默认：中文 -> 英文（from=zh, to=en）。
+
 可选参数：
 
 ```bash
-qtr --engine baidu --from auto --to zh
+qtr --engine baidu --from zh --to en
 ```
 
 交互快捷键：
 
 > 如果检测到你尚未配置任何引擎，直接运行 `qtr` 会自动进入 `config:setup` 向导。
 
-- `Tab`：打开/关闭引擎选择面板（↑/↓ 选择，Enter 确认；也可直接输入首字母快速定位）
+- `Tab`：打开/关闭引擎选择面板（↑/↓ 选择，Enter 确认；也可直接输入首字母快速定位；若选择未配置引擎，会自动进入 `config:setup`）
 - `Ctrl+S`：将当前引擎写入配置文件（下次默认使用）
 - `Ctrl+L`：清空输入
-- `Ctrl+F`：在 `auto` 与 `en` 间切换 from
-- `Ctrl+T`：在 `zh` 与 `en` 间切换 to
+- `Ctrl+F`：选择源语言（打开/关闭语言选择面板）
+- `Ctrl+T`：选择目标语言（打开/关闭语言选择面板）
 - `Esc` / `Ctrl+C`：退出
 
 ### 非交互模式（一次性翻译）

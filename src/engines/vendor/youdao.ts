@@ -37,10 +37,13 @@ export class YoudaoEngine implements TranslatorEngine {
 			)
 			.digest('hex');
 
+		const from = normalizeYoudaoLang(request.from);
+		const to = normalizeYoudaoLang(request.to);
+
 		const body = new URLSearchParams({
 			q: request.text,
-			from: request.from,
-			to: request.to,
+			from,
+			to,
 			appKey: this.creds.appKey,
 			salt,
 			sign,
@@ -70,4 +73,15 @@ function truncate(q: string) {
 	const size = q.length;
 	if (size <= 20) return q;
 	return q.slice(0, 10) + size + q.slice(size - 10);
+}
+
+function normalizeYoudaoLang(lang: string) {
+	switch (lang) {
+		case 'auto':
+			return 'auto';
+		case 'zh':
+			return 'zh-CHS';
+		default:
+			return lang;
+	}
 }
