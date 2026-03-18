@@ -5,6 +5,7 @@ import {createEngine, listEngines} from '../engines/index.js';
 import type {EngineName, TranslateRequest, TranslateResult} from '../engines/types.js';
 import {EngineSelectPanel} from './EngineSelectPanel.js';
 import {LanguageSelectPanel, type LanguageItem} from './LanguageSelectPanel.js';
+import {QtrBanner} from './QtrBanner.js';
 import {ResultBox} from './ResultBox.js';
 import {StatusBadge} from './StatusBadge.js';
 import {TextInput} from './TextInput.js';
@@ -251,6 +252,7 @@ export function TranslatorApp({
 
 	return (
 		<Box flexDirection="column" padding={1} gap={1}>
+			<QtrBanner />
 			<Box justifyContent="space-between">
 				<Text>
 					<Text color="cyanBright">qtr</Text>{' '}
