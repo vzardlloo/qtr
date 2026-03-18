@@ -1,0 +1,5 @@
+import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
+import { Box, Text } from 'ink';
+export function ResultBox({ engineName, status, result, errorMessage, }) {
+    return (_jsxs(Box, { flexDirection: "column", borderStyle: "round", borderColor: status === 'error' ? 'red' : 'green', paddingX: 1, paddingY: 0, children: [_jsx(Box, { children: _jsxs(Text, { children: ["Result ", _jsxs(Text, { dimColor: true, children: ["(", engineName, ")"] })] }) }), _jsxs(Box, { marginTop: 1, children: [status === 'idle' && _jsx(Text, { dimColor: true, children: "Type something to translate." }), status === 'loading' && _jsx(Text, { color: "yellow", children: "Translating\u2026" }), status === 'error' && (_jsx(Text, { color: "red", children: errorMessage ?? 'Unknown error' })), status === 'ok' && result && (_jsxs(Box, { flexDirection: "column", gap: 1, children: [_jsx(Text, { children: result.text }), Boolean(result.raw) && (_jsxs(Text, { dimColor: true, children: ["raw: ", JSON.stringify(result.raw).slice(0, 200)] }))] }))] })] }));
+}
