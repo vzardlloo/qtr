@@ -206,11 +206,7 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 						[engineName]: normalizeEngineValues(engineName, values),
 					} as any;
 
-					await saveConfig({
-						...config,
-						currentEngine: engineName,
-						engines: nextEngines,
-					});
+					await saveConfig({...config, engines: nextEngines});
 					setSavedPath(getPreferredConfigPath());
 					setStep('done');
 				} finally {
@@ -249,7 +245,7 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 						Saved to <Text color="green">{savedPath}</Text>
 					</Text>
 				</Box>
-				<Text dimColor>Press any key to exit, then run `qtr`.</Text>
+				<Text dimColor>Press any key to exit.</Text>
 			</Box>
 		);
 	}
