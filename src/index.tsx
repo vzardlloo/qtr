@@ -9,6 +9,7 @@ import {createEngine, listEngines} from './engines/index.js';
 import {isEngineName} from './engines/types.js';
 import {
 	getPreferredConfigPath,
+	hasAnyEngineConfigured,
 	initConfigIfMissing,
 	loadConfig,
 	setCurrentEngine,
@@ -23,6 +24,13 @@ cli
 	.option('--to <lang>', 'Target language, e.g. zh/en', {default: 'zh'})
 	.action(async (options) => {
 		await initConfigIfMissing();
+		const config = await loadConfig();
+
+		// No engine configured at all -> guide users into setup.
+		if (!hasAnyEngineConfigured(config)) {
+			render(<ConfigSetupApp initialEngine={options.engine} />);
+			return;
+		}
 
 		render(
 			<TranslatorApp
@@ -41,6 +49,10 @@ cli
 	.action(async (text: string, options) => {
 		await initConfigIfMissing();
 		const config = await loadConfig();
+		if (!hasAnyEngineConfigured(config)) {
+			throw new Error('未检测到任何可用翻译引擎配置，请先运行 `qtr config:setup` 设置一个引擎。');
+		}
+
 		const engineName = options.engine ?? config.currentEngine;
 		if (!isEngineName(engineName)) {
 			throw new Error(`Unknown engine: ${engineName}`);
