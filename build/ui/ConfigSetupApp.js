@@ -174,11 +174,7 @@ export function ConfigSetupApp({ initialEngine }) {
                         ...config.engines,
                         [engineName]: normalizeEngineValues(engineName, values),
                     };
-                    await saveConfig({
-                        ...config,
-                        currentEngine: engineName,
-                        engines: nextEngines,
-                    });
+                    await saveConfig({ ...config, engines: nextEngines });
                     setSavedPath(getPreferredConfigPath());
                     setStep('done');
                 }
@@ -193,7 +189,7 @@ export function ConfigSetupApp({ initialEngine }) {
         return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: (isEngineName(initialEngine) && initialEngine) || 'baidu' }), _jsxs(Text, { dimColor: true, children: ["\u7533\u8BF7\u5730\u5740: ", _jsx(Text, { color: "cyan", children: ENGINE_APPLY_GUIDE[highlightedEngineName].url })] }), _jsx(Text, { dimColor: true, children: ENGINE_APPLY_GUIDE[highlightedEngineName].hint }), _jsx(Text, { dimColor: true, children: "Esc: exit" })] }));
     }
     if (step === 'done') {
-        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "green", paddingX: 1, children: _jsxs(Text, { children: ["Saved to ", _jsx(Text, { color: "green", children: savedPath })] }) }), _jsx(Text, { dimColor: true, children: "Press any key to exit, then run `qtr`." })] }));
+        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "green", paddingX: 1, children: _jsxs(Text, { children: ["Saved to ", _jsx(Text, { color: "green", children: savedPath })] }) }), _jsx(Text, { dimColor: true, children: "Press any key to exit." })] }));
     }
     // step === 'fields'
     if (!engineName) {
