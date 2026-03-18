@@ -28,6 +28,12 @@ qtr
 qtr config:init
 ```
 
+也可以用交互式向导设置各引擎的 `appKey/appSecret` 等凭证：
+
+```bash
+qtr config:setup
+```
+
 配置文件示例：
 
 ```json

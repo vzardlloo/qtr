@@ -3,6 +3,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { render } from 'ink';
 import { cac } from 'cac';
 import { TranslatorApp } from './ui/TranslatorApp.js';
+import { ConfigSetupApp } from './ui/ConfigSetupApp.js';
 import { createEngine, listEngines } from './engines/index.js';
 import { isEngineName } from './engines/types.js';
 import { getPreferredConfigPath, initConfigIfMissing, loadConfig, setCurrentEngine, } from './config/config.js';
@@ -59,6 +60,13 @@ cli
     await setCurrentEngine(name);
     // eslint-disable-next-line no-console
     console.log(`Default engine set to: ${name}`);
+});
+cli
+    .command('config:setup', 'Interactive setup for engine credentials')
+    .option('--engine <name>', 'Engine name: baidu/youdao/tencent')
+    .action(async (options) => {
+    await initConfigIfMissing();
+    render(_jsx(ConfigSetupApp, { initialEngine: options.engine }));
 });
 cli.help();
 cli.parse();
