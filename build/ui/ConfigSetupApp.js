@@ -59,6 +59,20 @@ const ENGINE_FIELDS = {
         },
     ],
 };
+const ENGINE_APPLY_GUIDE = {
+    baidu: {
+        url: 'https://fanyi-api.baidu.com/',
+        hint: '打开后创建应用，获取 appId/appSecret。',
+    },
+    youdao: {
+        url: 'https://ai.youdao.com/',
+        hint: '打开后创建应用，获取 appKey/appSecret。',
+    },
+    tencent: {
+        url: 'https://cloud.tencent.com/product/tmt',
+        hint: '开通机器翻译服务后，在腾讯云控制台获取 SecretId/SecretKey。',
+    },
+};
 export function ConfigSetupApp({ initialEngine }) {
     const { exit } = useApp();
     const engines = useMemo(() => listEngines(), []);
@@ -174,8 +188,9 @@ export function ConfigSetupApp({ initialEngine }) {
             }
         }
     });
+    const highlightedEngineName = engines[engineHighlightedIndex]?.name ?? 'baidu';
     if (step === 'select-engine') {
-        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: (isEngineName(initialEngine) && initialEngine) || 'baidu' }), _jsx(Text, { dimColor: true, children: "Esc: exit" })] }));
+        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: (isEngineName(initialEngine) && initialEngine) || 'baidu' }), _jsxs(Text, { dimColor: true, children: ["\u7533\u8BF7\u5730\u5740: ", _jsx(Text, { color: "cyan", children: ENGINE_APPLY_GUIDE[highlightedEngineName].url })] }), _jsx(Text, { dimColor: true, children: ENGINE_APPLY_GUIDE[highlightedEngineName].hint }), _jsx(Text, { dimColor: true, children: "Esc: exit" })] }));
     }
     if (step === 'done') {
         return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "green", paddingX: 1, children: _jsxs(Text, { children: ["Saved to ", _jsx(Text, { color: "green", children: savedPath })] }) }), _jsx(Text, { dimColor: true, children: "Press any key to exit, then run `qtr`." })] }));
@@ -187,7 +202,7 @@ export function ConfigSetupApp({ initialEngine }) {
     const fields = ENGINE_FIELDS[engineName];
     const current = fields[fieldIndex];
     const currentValue = values[current.key] ?? '';
-    return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "yellow", paddingX: 1, paddingY: 0, children: _jsxs(Box, { flexDirection: "column", width: "100%", gap: 1, children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: ["Engine: ", _jsx(Text, { color: "yellow", children: engineName }), ' ', _jsx(Text, { dimColor: true, children: "(Esc to re-select)" })] }), _jsxs(Text, { dimColor: true, children: [fieldIndex + 1, "/", fields.length] })] }), _jsxs(Box, { flexDirection: "column", children: [_jsxs(Text, { children: [current.label, ' ', current.isRequired ? (_jsx(Text, { color: "red", children: "*" })) : (_jsx(Text, { dimColor: true, children: "(optional)" }))] }), _jsxs(Text, { dimColor: true, children: ["Current: ", maskValue(currentValue, current.isSecret)] }), _jsx(TextInput, { value: currentValue, onChange: (next) => setValues((v) => ({ ...v, [current.key]: next })), placeholder: current.placeholder }), _jsx(Text, { dimColor: true, children: "Enter: next / save" }), validationError && _jsx(Text, { color: "red", children: validationError })] })] }) }), isSaving && _jsx(Text, { color: "yellow", children: "Saving\u2026" })] }));
+    return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "yellow", paddingX: 1, paddingY: 0, children: _jsxs(Box, { flexDirection: "column", width: "100%", gap: 1, children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: ["Engine: ", _jsx(Text, { color: "yellow", children: engineName }), ' ', _jsx(Text, { dimColor: true, children: "(Esc to re-select)" })] }), _jsxs(Text, { dimColor: true, children: [fieldIndex + 1, "/", fields.length] })] }), _jsxs(Text, { dimColor: true, children: ["\u7533\u8BF7\u5730\u5740:", ' ', _jsx(Text, { color: "cyan", children: ENGINE_APPLY_GUIDE[engineName].url })] }), _jsx(Text, { dimColor: true, children: ENGINE_APPLY_GUIDE[engineName].hint }), _jsxs(Box, { flexDirection: "column", children: [_jsxs(Text, { children: [current.label, ' ', current.isRequired ? (_jsx(Text, { color: "red", children: "*" })) : (_jsx(Text, { dimColor: true, children: "(optional)" }))] }), _jsxs(Text, { dimColor: true, children: ["Current: ", maskValue(currentValue, current.isSecret)] }), _jsx(TextInput, { value: currentValue, onChange: (next) => setValues((v) => ({ ...v, [current.key]: next })), placeholder: current.placeholder }), _jsx(Text, { dimColor: true, children: "Enter: next / save" }), validationError && _jsx(Text, { color: "red", children: validationError })] })] }) }), isSaving && _jsx(Text, { color: "yellow", children: "Saving\u2026" })] }));
 }
 function maskValue(value, isSecret) {
     if (!value)

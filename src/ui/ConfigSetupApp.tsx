@@ -73,6 +73,27 @@ const ENGINE_FIELDS: Record<EngineName, Field[]> = {
 	],
 };
 
+const ENGINE_APPLY_GUIDE: Record<
+	EngineName,
+	{
+		url: string;
+		hint: string;
+	}
+> = {
+	baidu: {
+		url: 'https://fanyi-api.baidu.com/',
+		hint: '打开后创建应用，获取 appId/appSecret。',
+	},
+	youdao: {
+		url: 'https://ai.youdao.com/',
+		hint: '打开后创建应用，获取 appKey/appSecret。',
+	},
+	tencent: {
+		url: 'https://cloud.tencent.com/product/tmt',
+		hint: '开通机器翻译服务后，在腾讯云控制台获取 SecretId/SecretKey。',
+	},
+};
+
 export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 	const {exit} = useApp();
 	const engines = useMemo(() => listEngines(), []);
@@ -220,6 +241,9 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 		}
 	});
 
+	const highlightedEngineName =
+		engines[engineHighlightedIndex]?.name ?? ('baidu' as const);
+
 	if (step === 'select-engine') {
 		return (
 			<Box flexDirection="column" padding={1} gap={1}>
@@ -233,6 +257,10 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 						(isEngineName(initialEngine) && initialEngine) || 'baidu'
 					}
 				/>
+				<Text dimColor>
+					申请地址: <Text color="cyan">{ENGINE_APPLY_GUIDE[highlightedEngineName].url}</Text>
+				</Text>
+				<Text dimColor>{ENGINE_APPLY_GUIDE[highlightedEngineName].hint}</Text>
 				<Text dimColor>Esc: exit</Text>
 			</Box>
 		);
@@ -284,6 +312,12 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 							{fieldIndex + 1}/{fields.length}
 						</Text>
 					</Box>
+
+					<Text dimColor>
+						申请地址:{' '}
+						<Text color="cyan">{ENGINE_APPLY_GUIDE[engineName].url}</Text>
+					</Text>
+					<Text dimColor>{ENGINE_APPLY_GUIDE[engineName].hint}</Text>
 
 					<Box flexDirection="column">
 						<Text>
