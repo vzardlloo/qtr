@@ -15,8 +15,8 @@
   },
   "scripts": {
     "dev": "NODE_NO_WARNINGS=1 node --import=tsx src/index.tsx",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "node ./node_modules/typescript/bin/tsc",
+    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
     "start": "node build/index.js"
   },
   "dependencies": {
