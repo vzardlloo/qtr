@@ -1,3 +1,5 @@
+import {spawnSync} from 'node:child_process';
+
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Text, useApp, useInput} from 'ink';
 import {loadConfig, saveConfig, getPreferredConfigPath} from '../config/config.js';
@@ -73,6 +75,27 @@ const ENGINE_FIELDS: Record<EngineName, Field[]> = {
 	],
 };
 
+const ENGINE_APPLY_GUIDE: Record<
+	EngineName,
+	{
+		url: string;
+		hint: string;
+	}
+> = {
+	baidu: {
+		url: 'https://fanyi-api.baidu.com/',
+		hint: '打开后创建应用，获取 appId/appSecret。',
+	},
+	youdao: {
+		url: 'https://ai.youdao.com/',
+		hint: '打开后创建应用，获取 appKey/appSecret。',
+	},
+	tencent: {
+		url: 'https://cloud.tencent.com/product/tmt',
+		hint: '开通机器翻译服务后，在腾讯云控制台获取 SecretId/SecretKey。',
+	},
+};
+
 export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 	const {exit} = useApp();
 	const engines = useMemo(() => listEngines(), []);
@@ -92,6 +115,7 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 	const [validationError, setValidationError] = useState<string | undefined>();
 	const [isSaving, setIsSaving] = useState(false);
 	const [savedPath, setSavedPath] = useState<string | undefined>();
+	const [notice, setNotice] = useState<string | undefined>();
 
 	useEffect(() => {
 		if (!engineName) return;
@@ -104,11 +128,15 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 			setValues(existing ? {...existing} : {});
 			setFieldIndex(0);
 			setValidationError(undefined);
+			setNotice(undefined);
 
 			const idx = engines.findIndex((e) => e.name === engineName);
 			setEngineHighlightedIndex(idx >= 0 ? idx : 0);
 		})();
 	}, [engineName, engines]);
+
+	const highlightedEngineName: EngineName =
+		engines[engineHighlightedIndex]?.name ?? 'baidu';
 
 	useInput(async (character, key) => {
 		if (key.ctrl && character === 'c') {
@@ -124,6 +152,18 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 		if (step === 'select-engine') {
 			if (key.escape) {
 				exit();
+				return;
+			}
+
+			if (character === 'o' && !key.ctrl && !key.meta) {
+				const url = ENGINE_APPLY_GUIDE[highlightedEngineName].url;
+				try {
+					openInBrowser(url);
+					setNotice(`已尝试打开浏览器：${url}`);
+				} catch {
+					setNotice(`无法自动打开，请手动访问：${url}`);
+				}
+
 				return;
 			}
 
@@ -174,6 +214,19 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 		if (step === 'fields') {
 			if (key.escape) {
 				setStep('select-engine');
+				setNotice(undefined);
+				return;
+			}
+
+			if (character === 'o' && !key.ctrl && !key.meta && engineName) {
+				const url = ENGINE_APPLY_GUIDE[engineName].url;
+				try {
+					openInBrowser(url);
+					setNotice(`已尝试打开浏览器：${url}`);
+				} catch {
+					setNotice(`无法自动打开，请手动访问：${url}`);
+				}
+
 				return;
 			}
 
@@ -206,7 +259,11 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 						[engineName]: normalizeEngineValues(engineName, values),
 					} as any;
 
-					await saveConfig({...config, engines: nextEngines});
+					await saveConfig({
+						...config,
+						currentEngine: engineName,
+						engines: nextEngines,
+					});
 					setSavedPath(getPreferredConfigPath());
 					setStep('done');
 				} finally {
@@ -229,7 +286,13 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 						(isEngineName(initialEngine) && initialEngine) || 'baidu'
 					}
 				/>
-				<Text dimColor>Esc: exit</Text>
+				<Text dimColor>
+					申请地址:{' '}
+					<Text color="cyan">{ENGINE_APPLY_GUIDE[highlightedEngineName].url}</Text>
+				</Text>
+				<Text dimColor>{ENGINE_APPLY_GUIDE[highlightedEngineName].hint}</Text>
+				<Text dimColor>快捷键：o 打开链接 · Esc 退出</Text>
+				{notice && <Text dimColor>{notice}</Text>}
 			</Box>
 		);
 	}
@@ -245,7 +308,7 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 						Saved to <Text color="green">{savedPath}</Text>
 					</Text>
 				</Box>
-				<Text dimColor>Press any key to exit.</Text>
+				<Text dimColor>Press any key to exit, then run `qtr`.</Text>
 			</Box>
 		);
 	}
@@ -280,6 +343,14 @@ export function ConfigSetupApp({initialEngine}: ConfigSetupAppProps) {
 							{fieldIndex + 1}/{fields.length}
 						</Text>
 					</Box>
+
+					<Text dimColor>
+						申请地址:{' '}
+						<Text color="cyan">{ENGINE_APPLY_GUIDE[engineName].url}</Text>
+					</Text>
+					<Text dimColor>{ENGINE_APPLY_GUIDE[engineName].hint}</Text>
+					<Text dimColor>快捷键：o 打开链接</Text>
+					{notice && <Text dimColor>{notice}</Text>}
 
 					<Box flexDirection="column">
 						<Text>
@@ -336,5 +407,21 @@ function normalizeEngineValues(engineName: EngineName, values: Record<string, st
 				appSecret: values.appSecret ?? '',
 			};
 		}
+	}
+}
+
+function openInBrowser(url: string) {
+	const platform = process.platform;
+
+	const command =
+		platform === 'darwin' ? 'open' : platform === 'win32' ? 'cmd' : 'xdg-open';
+
+	const args =
+		platform === 'win32' ? ['/c', 'start', '', url] : [url];
+
+	const result = spawnSync(command, args, {stdio: 'ignore'});
+	if (result.error) throw result.error;
+	if (typeof result.status === 'number' && result.status !== 0) {
+		throw new Error(`open command exited with status ${result.status}`);
 	}
 }

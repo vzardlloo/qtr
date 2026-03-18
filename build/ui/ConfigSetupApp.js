@@ -1,4 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { spawnSync } from 'node:child_process';
 import { useEffect, useMemo, useState } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { loadConfig, saveConfig, getPreferredConfigPath } from '../config/config.js';
@@ -59,6 +60,20 @@ const ENGINE_FIELDS = {
         },
     ],
 };
+const ENGINE_APPLY_GUIDE = {
+    baidu: {
+        url: 'https://fanyi-api.baidu.com/',
+        hint: '打开后创建应用，获取 appId/appSecret。',
+    },
+    youdao: {
+        url: 'https://ai.youdao.com/',
+        hint: '打开后创建应用，获取 appKey/appSecret。',
+    },
+    tencent: {
+        url: 'https://cloud.tencent.com/product/tmt',
+        hint: '开通机器翻译服务后，在腾讯云控制台获取 SecretId/SecretKey。',
+    },
+};
 export function ConfigSetupApp({ initialEngine }) {
     const { exit } = useApp();
     const engines = useMemo(() => listEngines(), []);
@@ -70,6 +85,7 @@ export function ConfigSetupApp({ initialEngine }) {
     const [validationError, setValidationError] = useState();
     const [isSaving, setIsSaving] = useState(false);
     const [savedPath, setSavedPath] = useState();
+    const [notice, setNotice] = useState();
     useEffect(() => {
         if (!engineName)
             return;
@@ -79,10 +95,12 @@ export function ConfigSetupApp({ initialEngine }) {
             setValues(existing ? { ...existing } : {});
             setFieldIndex(0);
             setValidationError(undefined);
+            setNotice(undefined);
             const idx = engines.findIndex((e) => e.name === engineName);
             setEngineHighlightedIndex(idx >= 0 ? idx : 0);
         })();
     }, [engineName, engines]);
+    const highlightedEngineName = engines[engineHighlightedIndex]?.name ?? 'baidu';
     useInput(async (character, key) => {
         if (key.ctrl && character === 'c') {
             exit();
@@ -95,6 +113,17 @@ export function ConfigSetupApp({ initialEngine }) {
         if (step === 'select-engine') {
             if (key.escape) {
                 exit();
+                return;
+            }
+            if (character === 'o' && !key.ctrl && !key.meta) {
+                const url = ENGINE_APPLY_GUIDE[highlightedEngineName].url;
+                try {
+                    openInBrowser(url);
+                    setNotice(`已尝试打开浏览器：${url}`);
+                }
+                catch {
+                    setNotice(`无法自动打开，请手动访问：${url}`);
+                }
                 return;
             }
             if (key.upArrow) {
@@ -133,6 +162,18 @@ export function ConfigSetupApp({ initialEngine }) {
         if (step === 'fields') {
             if (key.escape) {
                 setStep('select-engine');
+                setNotice(undefined);
+                return;
+            }
+            if (character === 'o' && !key.ctrl && !key.meta && engineName) {
+                const url = ENGINE_APPLY_GUIDE[engineName].url;
+                try {
+                    openInBrowser(url);
+                    setNotice(`已尝试打开浏览器：${url}`);
+                }
+                catch {
+                    setNotice(`无法自动打开，请手动访问：${url}`);
+                }
                 return;
             }
             if (isSaving)
@@ -160,7 +201,11 @@ export function ConfigSetupApp({ initialEngine }) {
                         ...config.engines,
                         [engineName]: normalizeEngineValues(engineName, values),
                     };
-                    await saveConfig({ ...config, engines: nextEngines });
+                    await saveConfig({
+                        ...config,
+                        currentEngine: engineName,
+                        engines: nextEngines,
+                    });
                     setSavedPath(getPreferredConfigPath());
                     setStep('done');
                 }
@@ -171,10 +216,10 @@ export function ConfigSetupApp({ initialEngine }) {
         }
     });
     if (step === 'select-engine') {
-        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: (isEngineName(initialEngine) && initialEngine) || 'baidu' }), _jsx(Text, { dimColor: true, children: "Esc: exit" })] }));
+        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(EngineSelectPanel, { engines: engines, highlightedIndex: engineHighlightedIndex, selectedEngine: (isEngineName(initialEngine) && initialEngine) || 'baidu' }), _jsxs(Text, { dimColor: true, children: ["\u7533\u8BF7\u5730\u5740:", ' ', _jsx(Text, { color: "cyan", children: ENGINE_APPLY_GUIDE[highlightedEngineName].url })] }), _jsx(Text, { dimColor: true, children: ENGINE_APPLY_GUIDE[highlightedEngineName].hint }), _jsx(Text, { dimColor: true, children: "\u5FEB\u6377\u952E\uFF1Ao \u6253\u5F00\u94FE\u63A5 \u00B7 Esc \u9000\u51FA" }), notice && _jsx(Text, { dimColor: true, children: notice })] }));
     }
     if (step === 'done') {
-        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "green", paddingX: 1, children: _jsxs(Text, { children: ["Saved to ", _jsx(Text, { color: "green", children: savedPath })] }) }), _jsx(Text, { dimColor: true, children: "Press any key to exit." })] }));
+        return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "green", paddingX: 1, children: _jsxs(Text, { children: ["Saved to ", _jsx(Text, { color: "green", children: savedPath })] }) }), _jsx(Text, { dimColor: true, children: "Press any key to exit, then run `qtr`." })] }));
     }
     // step === 'fields'
     if (!engineName) {
@@ -183,7 +228,7 @@ export function ConfigSetupApp({ initialEngine }) {
     const fields = ENGINE_FIELDS[engineName];
     const current = fields[fieldIndex];
     const currentValue = values[current.key] ?? '';
-    return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "yellow", paddingX: 1, paddingY: 0, children: _jsxs(Box, { flexDirection: "column", width: "100%", gap: 1, children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: ["Engine: ", _jsx(Text, { color: "yellow", children: engineName }), ' ', _jsx(Text, { dimColor: true, children: "(Esc to re-select)" })] }), _jsxs(Text, { dimColor: true, children: [fieldIndex + 1, "/", fields.length] })] }), _jsxs(Box, { flexDirection: "column", children: [_jsxs(Text, { children: [current.label, ' ', current.isRequired ? (_jsx(Text, { color: "red", children: "*" })) : (_jsx(Text, { dimColor: true, children: "(optional)" }))] }), _jsxs(Text, { dimColor: true, children: ["Current: ", maskValue(currentValue, current.isSecret)] }), _jsx(TextInput, { value: currentValue, onChange: (next) => setValues((v) => ({ ...v, [current.key]: next })), placeholder: current.placeholder }), _jsx(Text, { dimColor: true, children: "Enter: next / save" }), validationError && _jsx(Text, { color: "red", children: validationError })] })] }) }), isSaving && _jsx(Text, { color: "yellow", children: "Saving\u2026" })] }));
+    return (_jsxs(Box, { flexDirection: "column", padding: 1, gap: 1, children: [_jsxs(Text, { children: [_jsx(Text, { color: "cyanBright", children: "qtr" }), " ", _jsx(Text, { dimColor: true, children: "config setup" })] }), _jsx(Box, { borderStyle: "round", borderColor: "yellow", paddingX: 1, paddingY: 0, children: _jsxs(Box, { flexDirection: "column", width: "100%", gap: 1, children: [_jsxs(Box, { justifyContent: "space-between", children: [_jsxs(Text, { children: ["Engine: ", _jsx(Text, { color: "yellow", children: engineName }), ' ', _jsx(Text, { dimColor: true, children: "(Esc to re-select)" })] }), _jsxs(Text, { dimColor: true, children: [fieldIndex + 1, "/", fields.length] })] }), _jsxs(Text, { dimColor: true, children: ["\u7533\u8BF7\u5730\u5740:", ' ', _jsx(Text, { color: "cyan", children: ENGINE_APPLY_GUIDE[engineName].url })] }), _jsx(Text, { dimColor: true, children: ENGINE_APPLY_GUIDE[engineName].hint }), _jsx(Text, { dimColor: true, children: "\u5FEB\u6377\u952E\uFF1Ao \u6253\u5F00\u94FE\u63A5" }), notice && _jsx(Text, { dimColor: true, children: notice }), _jsxs(Box, { flexDirection: "column", children: [_jsxs(Text, { children: [current.label, ' ', current.isRequired ? (_jsx(Text, { color: "red", children: "*" })) : (_jsx(Text, { dimColor: true, children: "(optional)" }))] }), _jsxs(Text, { dimColor: true, children: ["Current: ", maskValue(currentValue, current.isSecret)] }), _jsx(TextInput, { value: currentValue, onChange: (next) => setValues((v) => ({ ...v, [current.key]: next })), placeholder: current.placeholder }), _jsx(Text, { dimColor: true, children: "Enter: next / save" }), validationError && _jsx(Text, { color: "red", children: validationError })] })] }) }), isSaving && _jsx(Text, { color: "yellow", children: "Saving\u2026" })] }));
 }
 function maskValue(value, isSecret) {
     if (!value)
@@ -213,5 +258,16 @@ function normalizeEngineValues(engineName, values) {
                 appSecret: values.appSecret ?? '',
             };
         }
+    }
+}
+function openInBrowser(url) {
+    const platform = process.platform;
+    const command = platform === 'darwin' ? 'open' : platform === 'win32' ? 'cmd' : 'xdg-open';
+    const args = platform === 'win32' ? ['/c', 'start', '', url] : [url];
+    const result = spawnSync(command, args, { stdio: 'ignore' });
+    if (result.error)
+        throw result.error;
+    if (typeof result.status === 'number' && result.status !== 0) {
+        throw new Error(`open command exited with status ${result.status}`);
     }
 }

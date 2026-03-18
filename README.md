@@ -32,6 +32,8 @@ qtr config:init
 
 ```bash
 qtr config:setup
+
+# 向导内会展示各引擎申请地址，也可按 o 尝试打开浏览器
 ```
 
 配置文件示例：
