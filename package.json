@@ -2,6 +2,24 @@
   "name": "qtr",
   "version": "0.1.0",
   "description": "A beautiful interactive translation CLI built with Ink.",
+  "keywords": [
+    "cli",
+    "translation",
+    "translator",
+    "tui",
+    "ink",
+    "react",
+    "terminal"
+  ],
+  "homepage": "https://github.com/vzardlloo/qtr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vzardlloo/qtr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vzardlloo/qtr/issues"
+  },
+  "license": "MIT",
   "type": "module",
   "bin": {
     "qtr": "./build/index.js"
@@ -17,6 +35,7 @@
     "dev": "NODE_NO_WARNINGS=1 node --import=tsx src/index.tsx",
     "build": "node ./node_modules/typescript/bin/tsc",
     "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
+    "prepublishOnly": "npm run build",
     "start": "node build/index.js"
   },
   "dependencies": {
