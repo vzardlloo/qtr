@@ -1,7 +1,7 @@
 {
   "name": "qtr",
   "version": "0.1.1",
-  "description": "A beautiful interactive translation CLI built with Ink.",
+  "description": "A tiny, fast translation tool for the terminal.",
   "keywords": [
     "cli",
     "translation",
