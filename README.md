@@ -10,15 +10,29 @@
 
 核心特点：**输入即翻译**、界面美观、引擎可扩展、配置可持久化。
 
-## 安装
+## 安装（npm）
 
 > 需要 Node.js >= 20。
 
-本仓库未发布到 npm 时，你可以用本地方式体验：
+已发布到 npm：`@vzard/qtr`。
 
 ```bash
+npm i -g @vzard/qtr
+qtr --help
+qtr
+```
+
+## 本地开发方式
+
+```bash
+git clone https://github.com/vzardlloo/qtr.git
 cd qtr
 npm i
+
+# 直接跑 TS 源码（开发调试）
+npm run dev
+
+# 构建产物并本地全局链接（更接近真实安装效果）
 npm run build
 npm link
 qtr
