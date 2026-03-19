@@ -1,5 +1,5 @@
 {
-  "name": "qtr",
+  "name": "@vzard/qtr",
   "version": "0.1.2",
   "description": "A tiny, fast translation tool for the terminal.",
   "keywords": [
