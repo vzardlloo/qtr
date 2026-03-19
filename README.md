@@ -1,4 +1,4 @@
-# qtr (Ink)
+# qtr(quick translation) - A tiny, fast translation tool for the terminal. 
 
 ```text
    ____  __      ____
@@ -8,7 +8,7 @@
 \___\_\/_\__,_/_/ |_|
 ```
 
-一个基于 **Node.js + React + Ink** 的交互式翻译 CLI。核心目标是：**输入即翻译**、界面美观、引擎可扩展、配置可持久化。
+核心特点：**输入即翻译**、界面美观、引擎可扩展、配置可持久化。
 
 ## 安装
 
